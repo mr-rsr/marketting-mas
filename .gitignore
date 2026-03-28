@@ -26,6 +26,9 @@ build/
 .DS_Store
 Thumbs.db
 
+# Generated files
+logo.png
+
 # Streamlit
 .streamlit/
 

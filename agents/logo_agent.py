@@ -53,10 +53,34 @@ def generate_logo(business_name: str) -> str:
     })
     try:
         image_bytes = _generate_image(body)
+
+        # Try uploading to Supabase Storage if user is logged in
+        logo_url = None
+        try:
+            import streamlit as st
+            from supabase_client import upload_logo
+
+            user = st.session_state.get("user")
+            conv_id = st.session_state.get("current_conversation_id")
+            if user and conv_id:
+                logo_url = upload_logo(user["id"], conv_id, image_bytes)
+                if logo_url:
+                    st.session_state["last_logo_url"] = logo_url
+        except Exception as e:
+            logger.warning("Supabase upload skipped: %s", e)
+
+        # Always save locally as fallback
         output_path = "logo.png"
         with open(output_path, "wb") as f:
             f.write(image_bytes)
+
         logger.info("Successfully generated logo for %s", business_name)
+
+        if logo_url:
+            return (
+                f"Logo generated successfully for {business_name}! "
+                f"The logo has been saved and uploaded to cloud storage."
+            )
         return f"Logo generated successfully for {business_name}! The logo is saved to {output_path}."
     except (ClientError, ImageError) as e:
         msg = e.message if isinstance(e, ImageError) else e.response["Error"]["Message"]
